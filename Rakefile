@@ -7,9 +7,9 @@ begin
   Jeweler::Tasks.new do |s|
     s.name = "tuple"
     s.summary = %Q{TODO}
-    s.email = "justin@geni.com"
+    s.email = "code@justinbalthrop.com"
     s.homepage = "http://github.com/ninjudd/tuple"
-    s.description = "TODO"
+    s.description = "Fast, binary-sortable serialization for arrays of simple Ruby types."
     s.authors = ["Justin Balthrop"]
   end
 rescue LoadError
@@ -17,7 +17,7 @@ rescue LoadError
 end
 
 Rake::TestTask.new do |t|
-  t.libs << 'lib'
+  t.libs << "ext"
   t.pattern = 'test/**/*_test.rb'
   t.verbose = false
 end
