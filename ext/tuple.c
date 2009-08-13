@@ -14,6 +14,13 @@ VALUE mTuple;
 
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
 
+/*
+ * call-seq:
+ * Tuple.dump(tuple) -> string
+ *
+ * Dumps an array of simple Ruby types into a string of binary data.
+ *
+ */
 static VALUE tuple_dump(VALUE self, VALUE tuple) {
   VALUE data = rb_str_new2("");
   VALUE item;
@@ -73,6 +80,13 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   return data;
 }
 
+/*
+ * call-seq:
+ * Tuple.load(string) -> tuple
+ *
+ * Reads in a previously dumped tuple from a string of binary data.
+ *
+ */
 static VALUE tuple_load(VALUE self, VALUE data) {
   VALUE tuple = rb_ary_new();
   VALUE item;

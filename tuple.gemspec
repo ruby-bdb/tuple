@@ -7,11 +7,12 @@ Gem::Specification.new do |s|
   s.date = %q{2009-08-12}
   s.description = %q{Fast, binary-sortable serialization for arrays of simple Ruby types.}
   s.email = %q{code@justinbalthrop.com}
-  s.files = ["README.rdoc", "VERSION.yml", "test/test_helper.rb", "test/tuple_test.rb"]
+  s.files = ["README.rdoc", "VERSION.yml", "ext/tuple.c", "ext/extconf.rb", "test/test_helper.rb", "test/tuple_test.rb"]
+  s.extensions = ["ext/extconf.rb"]
   s.has_rdoc = true
   s.homepage = %q{http://github.com/ninjudd/tuple}
   s.rdoc_options = ["--inline-source", "--charset=UTF-8"]
-  s.require_paths = ["lib"]
+  s.require_paths = ["ext"]
   s.rubygems_version = %q{1.2.0}
   s.summary = %q{TODO}
 
