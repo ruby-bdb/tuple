@@ -40,4 +40,13 @@ begin
 rescue LoadError
 end
 
+desc "Clean"
+task :clean do
+  include FileUtils
+  Dir.chdir('ext') do
+    rm(Dir.glob('*') - ['tuple.c', 'extconf.rb'])
+  end
+  rm_rf 'pkg'
+end
+
 task :default => :test

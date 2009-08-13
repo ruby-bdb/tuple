@@ -15,7 +15,6 @@ VALUE mTuple;
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
 
 static VALUE tuple_dump(VALUE self, VALUE tuple) {
-  tuple = rb_check_array_type(tuple);
   VALUE data = rb_str_new2("");
   VALUE item;
   int i, j, len, sign;
@@ -23,13 +22,14 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   u_int32_t digit;
   BDIGIT *digits;
 
+  Check_Type(tuple, T_ARRAY);
   for (i = 0; i < RARRAY(tuple)->len; i++) {
     item = RARRAY(tuple)->ptr[i];
     header[0] = header[1] = header[2] = header[3] = 0;
     if (FIXNUM_P(item)) {
       sign = (digit >= 0);
       header[2] = (sign ? INTP_SORT : INTN_SORT);
-      header[3] = 1;
+      header[3] = 0;
       rb_str_cat(data, (char*)&header, sizeof(header));
 
       digit = htonl(FIX2INT(item) + (sign ? 0 : MAX_INT));
@@ -46,8 +46,12 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
         rb_str_cat(data, (char*)&digit, sizeof(digit));
       }
     } else if (SYMBOL_P(item) || TYPE(item) == T_STRING) {
-      header[2] = SYMBOL_P(item) ? SYM_SORT : STR_SORT;
-
+      if (SYMBOL_P(item)) {
+        header[2] = SYM_SORT;
+        item = rb_funcall(item, rb_intern("to_s"), 0);
+      } else {
+        header[2] = STR_SORT;
+      }
       rb_str_cat(data, (char*)&header, sizeof(header));
       len = RSTRING_LEN(item);
       rb_str_cat(data, RSTRING_PTR(item), len);
@@ -91,7 +95,7 @@ static VALUE tuple_load(VALUE self, VALUE data) {
     case INTP_SORT:
     case INTN_SORT:
       sign = (header[2] == INTP_SORT);
-      if (header[3] == 1) {
+      if (header[3] == 0) {
         digit = ntohl(*(u_int32_t*)ptr) - (sign ? 0 : MAX_INT);
         ptr += 4;
         rb_ary_push(tuple, INT2NUM(digit));
@@ -117,9 +121,9 @@ static VALUE tuple_load(VALUE self, VALUE data) {
       item = rb_str_new2(ptr);
       len = RSTRING_LEN(item);
       while (len % 4 != 0) len++;
-      item = header[2] == STR_SORT ? item : rb_funcall(item, rb_intern("to_sym"), 0);
-      rb_ary_push(tuple, item);
       ptr += len;
+      if (header[2] == SYM_SORT) item = rb_funcall(item, rb_intern("to_sym"), 0);
+      rb_ary_push(tuple, item);
       break;
     }
   }  
