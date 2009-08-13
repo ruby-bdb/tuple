@@ -7,12 +7,12 @@ performance benifits when using Tuples as keys for a BTree.
 A Tuple is just an Array of any number of simple Ruby types. The following types are
 supported (listed in ascending sort order):
   
- * NilClass
- * FalseClass
- * Integer (Fixnum or Bignum)
- * String
- * Symbol
- * True
+1. NilClass
+2. FalseClass
+3. Integer (Fixnum or Bignum)
+4. String
+5. Symbol
+6. True
 
 == Usage:
    
