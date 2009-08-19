@@ -12,6 +12,10 @@ class TupleTest < Test::Unit::TestCase
     assert_equal t, Tuple.load(Tuple.dump(t))
   end
 
+  should "convert single value into array" do
+    assert_equal [1], Tuple.load(Tuple.dump(1))
+  end
+
   should "sort tuples using binary" do
     tuples = [
       [1, "foo"],

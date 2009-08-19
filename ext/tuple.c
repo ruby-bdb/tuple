@@ -29,7 +29,8 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   u_int32_t digit;
   BDIGIT *digits;
 
-  Check_Type(tuple, T_ARRAY);
+  if (TYPE(tuple) != T_ARRAY) tuple = rb_ary_new4(1, tuple);
+
   for (i = 0; i < RARRAY(tuple)->len; i++) {
     item = RARRAY(tuple)->ptr[i];
     header[0] = header[1] = header[2] = header[3] = 0;
