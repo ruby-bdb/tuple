@@ -2,7 +2,8 @@
 
 VALUE mTuple;
 
-#define TRUE_SORT  128 // TrueClass
+#define TRUE_SORT  255 // TrueClass
+#define TIME_SORT  128 // Time
 #define SYM_SORT    64 // Symbol
 #define STR_SORT    32 // String
 #define INTP_SORT   16 // Integer (Positive)
@@ -13,6 +14,16 @@ VALUE mTuple;
 #define MAX_INT 0xffffffff
 
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
+
+static void null_pad(VALUE data, int len) {
+  static u_int8_t null = 0;
+
+  // Pad with null bytes so subsequent fields will be aligned.
+  while (len % 4 != 0) {
+    rb_str_cat(data, (char*)&null, 1);
+    len++;
+  }
+}
 
 /*
  * call-seq:
@@ -64,11 +75,17 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
       len = RSTRING_LEN(item);
       rb_str_cat(data, RSTRING_PTR(item), len);
       
-      // Pad with null bytes so subsequent fields will be aligned.
-      while (len % 4 != 0) {
-        rb_str_cat(data, (char*)&header, 1);
-        len++;
-      }
+      null_pad(data, len);
+    } else if (rb_obj_class(item) == rb_cTime) {
+      header[2] = TIME_SORT;
+      rb_str_cat(data, (char*)&header, sizeof(header));
+
+      item = rb_funcall(item, rb_intern("getgm"), 0);
+      item = rb_funcall(item, rb_intern("strftime"), 1, rb_str_new2("%Y/%m/%d %H:%M:%S +0000"));
+      len  = RSTRING_LEN(item);
+      rb_str_cat(data, RSTRING_PTR(item), len);
+
+      null_pad(data, len);
     } else {        
       if      (item == Qnil)   header[2] = NIL_SORT;
       else if (item == Qtrue)  header[2] = TRUE_SORT;
@@ -134,11 +151,22 @@ static VALUE tuple_load(VALUE self, VALUE data) {
     case STR_SORT:
     case SYM_SORT:
       item = rb_str_new2(ptr);
-      len = RSTRING_LEN(item);
+      len  = RSTRING_LEN(item);
       while (len % 4 != 0) len++;
       ptr += len;
       if (header[2] == SYM_SORT) item = rb_funcall(item, rb_intern("to_sym"), 0);
       rb_ary_push(tuple, item);
+      break;
+    case TIME_SORT:
+      item = rb_str_new2(ptr);
+      len  = RSTRING_LEN(item);
+      while (len % 4 != 0) len++;
+      ptr += len;
+      item = rb_funcall(rb_cTime, rb_intern("parse"), 1, item);
+      rb_ary_push(tuple, item);
+      break;
+    default:
+      rb_raise(rb_eTypeError, "invalid type code %d in tuple", header[2]);
       break;
     }
   }  
@@ -147,6 +175,8 @@ static VALUE tuple_load(VALUE self, VALUE data) {
 
 VALUE mTuple;
 void Init_tuple() {
+  rb_require("time");
+
   mTuple = rb_define_module("Tuple");
   rb_define_module_function(mTuple, "dump", tuple_dump, 1);
   rb_define_module_function(mTuple, "load", tuple_load, 1);

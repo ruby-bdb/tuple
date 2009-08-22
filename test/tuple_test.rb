@@ -1,8 +1,15 @@
 require File.dirname(__FILE__) + '/test_helper'
 
+class Time
+  def ==(other)
+    # Ignore microseconds for testing.
+    to_i == other.to_i
+  end
+end
+
 class TupleTest < Test::Unit::TestCase
   should "dump and load arrays of simple types" do
-    t = [1, true, :foo, "foo", -1001, false, nil]
+    t = [1, true, :foo, "foo", -1001, false, nil, Time.now]
     assert_equal t, Tuple.load(Tuple.dump(t))
   end
   
@@ -17,6 +24,8 @@ class TupleTest < Test::Unit::TestCase
   end
 
   should "sort tuples using binary" do
+    now = Time.now
+
     tuples = [
       [1, "foo"],
       [1, true],
@@ -35,6 +44,9 @@ class TupleTest < Test::Unit::TestCase
       ["charles", "atlas jr."],
       ["charles", "atlas", "world's", "strongest", "man"],
       ["charles", "atlas", 5],
+      [now, "foo"],
+      [now, "bar"],
+      [now - 24 * 60 * 60],
     ]
 
     expected = [
@@ -54,6 +66,9 @@ class TupleTest < Test::Unit::TestCase
       [:foo, -18446744073709551616],
       [:foo, -1],
       [:foo, 18446744073709551616],
+      [now - 24 * 60 * 60],
+      [now, "bar"],
+      [now, "foo"],
       [true]
     ]  
     assert_equal expected, tuples.sort_by {|t| Tuple.dump(t)}
