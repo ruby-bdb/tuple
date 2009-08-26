@@ -9,7 +9,7 @@ end
 
 class TupleTest < Test::Unit::TestCase
   should "dump and load arrays of simple types" do
-    t = [1, true, :foo, "foo", -1001, false, nil, Time.now]
+    t = [1, true, :foo, "foo", -1001, false, nil, Time.now, Date.today - 7]
     assert_equal t, Tuple.load(Tuple.dump(t))
   end
   
@@ -24,7 +24,8 @@ class TupleTest < Test::Unit::TestCase
   end
 
   should "sort tuples using binary" do
-    now = Time.now
+    now   = Time.now.getgm
+    today = Date.parse(now.to_s)
 
     tuples = [
       [1, "foo"],
@@ -47,6 +48,9 @@ class TupleTest < Test::Unit::TestCase
       [now, "foo"],
       [now, "bar"],
       [now - 24 * 60 * 60],
+      [today + 1],
+      [today - 1],
+      [today],
     ]
 
     expected = [
@@ -66,11 +70,14 @@ class TupleTest < Test::Unit::TestCase
       [:foo, -18446744073709551616],
       [:foo, -1],
       [:foo, 18446744073709551616],
+      [today - 1],
       [now - 24 * 60 * 60],
+      [today],
       [now, "bar"],
       [now, "foo"],
+      [today + 1],
       [true]
-    ]  
+    ]
     assert_equal expected, tuples.sort_by {|t| Tuple.dump(t)}
 
     100.times do

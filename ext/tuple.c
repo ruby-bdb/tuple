@@ -1,6 +1,7 @@
 #include "ruby.h"
 
 VALUE mTuple;
+VALUE rb_cDate;
 
 #define TRUE_SORT  255 // TrueClass
 #define TIME_SORT  128 // Time
@@ -76,13 +77,17 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
       rb_str_cat(data, RSTRING_PTR(item), len);
       
       null_pad(data, len);
-    } else if (rb_obj_class(item) == rb_cTime) {
+    } else if (rb_obj_class(item) == rb_cTime || rb_obj_class(item) == rb_cDate) {
       header[2] = TIME_SORT;
       rb_str_cat(data, (char*)&header, sizeof(header));
 
-      item = rb_funcall(item, rb_intern("getgm"), 0);
-      item = rb_funcall(item, rb_intern("strftime"), 1, rb_str_new2("%Y/%m/%d %H:%M:%S +0000"));
-      len  = RSTRING_LEN(item);
+      if (rb_obj_class(item) == rb_cTime) {
+        item = rb_funcall(item, rb_intern("getgm"), 0);
+        item = rb_funcall(item, rb_intern("strftime"), 1, rb_str_new2("%Y/%m/%d %H:%M:%S +0000"));
+      } else {
+        item = rb_funcall(item, rb_intern("strftime"), 1, rb_str_new2("%Y/%m/%d"));
+      }
+      len = RSTRING_LEN(item);
       rb_str_cat(data, RSTRING_PTR(item), len);
 
       null_pad(data, len);
@@ -152,18 +157,17 @@ static VALUE tuple_load(VALUE self, VALUE data) {
     case SYM_SORT:
       item = rb_str_new2(ptr);
       len  = RSTRING_LEN(item);
-      while (len % 4 != 0) len++;
-      ptr += len;
       if (header[2] == SYM_SORT) item = rb_funcall(item, rb_intern("to_sym"), 0);
       rb_ary_push(tuple, item);
+      while (len % 4 != 0) len++; ptr += len;
       break;
     case TIME_SORT:
       item = rb_str_new2(ptr);
       len  = RSTRING_LEN(item);
-      while (len % 4 != 0) len++;
-      ptr += len;
-      item = rb_funcall(rb_cTime, rb_intern("parse"), 1, item);
+      if (len == 10) item = rb_funcall(rb_cDate, rb_intern("parse"), 1, item);
+      else           item = rb_funcall(rb_cTime, rb_intern("parse"), 1, item);
       rb_ary_push(tuple, item);
+      while (len % 4 != 0) len++; ptr += len;
       break;
     default:
       rb_raise(rb_eTypeError, "invalid type code %d in tuple", header[2]);
@@ -176,6 +180,8 @@ static VALUE tuple_load(VALUE self, VALUE data) {
 VALUE mTuple;
 void Init_tuple() {
   rb_require("time");
+  rb_require("date");
+  rb_cDate = rb_const_get(rb_cObject, rb_intern("Date"));
 
   mTuple = rb_define_module("Tuple");
   rb_define_module_function(mTuple, "dump", tuple_dump, 1);
