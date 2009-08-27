@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name = %q{tuple}
-  s.version = "0.0.8"
+  s.version = "0.0.9"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Justin Balthrop"]
-  s.date = %q{2009-08-25}
+  s.date = %q{2009-08-26}
   s.description = %q{Fast, binary-sortable serialization for arrays of simple Ruby types.}
   s.email = %q{code@justinbalthrop.com}
   s.extensions = ["ext/extconf.rb"]
