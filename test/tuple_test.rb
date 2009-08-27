@@ -9,7 +9,7 @@ end
 
 class TupleTest < Test::Unit::TestCase
   should "dump and load arrays of simple types" do
-    t = [1, true, :foo, "foo", -1001, false, nil, Time.now, Date.today - 7]
+    t = [1, true, :foo, "foo", -1001, false, nil, Time.now, Date.today - 7, [:foo, 1, 4, nil]]
     assert_equal t, Tuple.load(Tuple.dump(t))
   end
   

@@ -4,6 +4,8 @@ VALUE mTuple;
 VALUE rb_cDate;
 
 #define TRUE_SORT  255 // TrueClass
+#define TUPLE_SORT 192 // Array
+#define TUPLE_END  191 // For nested tuples 
 #define TIME_SORT  128 // Time
 #define SYM_SORT    64 // Symbol
 #define STR_SORT    32 // String
@@ -91,6 +93,14 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
       rb_str_cat(data, RSTRING_PTR(item), len);
 
       null_pad(data, len);
+    } else if (TYPE(item) == T_ARRAY) {
+      header[2] = TUPLE_SORT;
+      rb_str_cat(data, (char*)&header, sizeof(header));
+
+      rb_str_concat(data, tuple_dump(mTuple, item));
+
+      header[2] = TUPLE_END;
+      rb_str_cat(data, (char*)&header, sizeof(header));      
     } else {        
       if      (item == Qnil)   header[2] = NIL_SORT;
       else if (item == Qtrue)  header[2] = TRUE_SORT;
@@ -103,19 +113,11 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   return data;
 }
 
-/*
- * call-seq:
- * Tuple.load(string) -> tuple
- *
- * Reads in a previously dumped tuple from a string of binary data.
- *
- */
-static VALUE tuple_load(VALUE self, VALUE data) {
+static VALUE tuple_parse(void **data, int data_len) {
   VALUE tuple = rb_ary_new();
   VALUE item;
-  data = StringValue(data);
-  void* ptr = RSTRING_PTR(data); 
-  void* end = ptr + RSTRING_LEN(data);
+  void* ptr = *data; *data = &ptr;
+  void* end = ptr + data_len;
   int i, len, sign;
   u_int8_t header[4];
   u_int32_t digit;
@@ -169,12 +171,35 @@ static VALUE tuple_load(VALUE self, VALUE data) {
       rb_ary_push(tuple, item);
       while (len % 4 != 0) len++; ptr += len;
       break;
+    case TUPLE_SORT:
+      item = tuple_parse(&ptr, end - ptr);
+      rb_ary_push(tuple, item);
+      break;
+    case TUPLE_END:
+      return tuple;
     default:
       rb_raise(rb_eTypeError, "invalid type code %d in tuple", header[2]);
       break;
     }
-  }  
+  }
   return tuple;
+}
+
+/*
+ * call-seq:
+ * Tuple.load(string) -> tuple
+ *
+ * Reads in a previously dumped tuple from a string of binary data.
+ *
+ */
+static VALUE tuple_load(VALUE self, VALUE data) {
+  data = StringValue(data);
+  void* ptr = RSTRING_PTR(data);
+  return tuple_parse(&ptr, RSTRING_LEN(data));
+}
+
+static VALUE array_compare(VALUE self, VALUE other) {
+  rb_funcall(tuple_dump(mTuple, self), rb_intern("<=>"), 1, tuple_dump(mTuple, other));
 }
 
 VALUE mTuple;
@@ -186,4 +211,5 @@ void Init_tuple() {
   mTuple = rb_define_module("Tuple");
   rb_define_module_function(mTuple, "dump", tuple_dump, 1);
   rb_define_module_function(mTuple, "load", tuple_load, 1);
+  rb_define_method(rb_cArray, "<=>", array_compare, 1);
 }
