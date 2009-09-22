@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include <netinet/in.h>
 
 VALUE mTuple;
 VALUE rb_cDate;
@@ -26,6 +27,19 @@ static void null_pad(VALUE data, int len) {
   }
 }
 
+
+u_int32_t split64(int64_t num, int word) {
+  u_int32_t *split = (u_int32_t*)(void*)&num;
+
+  static int i = 1;
+  if (*(char *)&i == 1) word = word ? 1: 0;
+  else                  word = word ? 0: 1;
+
+  return split[word];
+}
+
+
+
 /*
  * call-seq:
  * Tuple.dump(tuple) -> string
@@ -42,6 +56,7 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   int64_t fixnum;
   BDIGIT *digits;
 
+
   if (TYPE(tuple) != T_ARRAY) tuple = rb_ary_new4(1, &tuple);
 
   for (i = 0; i < RARRAY(tuple)->len; i++) {
@@ -54,14 +69,14 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
       len = fixnum > UINT_MAX ? 2 : 1;
       header[2] = sign ? INTP_SORT : INTN_SORT;
       header[3] = sign ? len : UCHAR_MAX - len;
-      rb_str_cat(data, (char*)&header, sizeof(header));
+      rb_str_cat(data, (char*)&header, sizeof(header));      
 
       if (len == 2) {
-        digit = ((u_int32_t *)(&fixnum))[_QUAD_HIGHWORD];
+        digit = split64(fixnum, 1);
         digit = htonl(sign ? digit : UINT_MAX - digit);
         rb_str_cat(data, (char*)&digit, sizeof(digit));
       }
-      digit = ((u_int32_t *)(&fixnum))[_QUAD_LOWWORD];
+      digit = split64(fixnum, 0);
       digit = htonl(sign ? digit : UINT_MAX - digit);
       rb_str_cat(data, (char*)&digit, sizeof(digit));
     } else if (TYPE(item) == T_BIGNUM) {
@@ -209,7 +224,7 @@ static VALUE tuple_load(VALUE self, VALUE data) {
 }
 
 static VALUE array_compare(VALUE self, VALUE other) {
-  rb_funcall(tuple_dump(mTuple, self), rb_intern("<=>"), 1, tuple_dump(mTuple, other));
+  return rb_funcall(tuple_dump(mTuple, self), rb_intern("<=>"), 1, tuple_dump(mTuple, other));
 }
 
 VALUE mTuple;
