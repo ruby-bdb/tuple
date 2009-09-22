@@ -14,8 +14,6 @@ VALUE rb_cDate;
 #define FALSE_SORT   1 // FalseClass
 #define NIL_SORT     0 // NilClass
 
-#define MAX_INT 0xffffffff
-
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
 
 static void null_pad(VALUE data, int len) {
@@ -41,6 +39,7 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   int i, j, len, sign;
   u_int8_t header[4];
   u_int32_t digit;
+  int64_t fixnum;
   BDIGIT *digits;
 
   if (TYPE(tuple) != T_ARRAY) tuple = rb_ary_new4(1, &tuple);
@@ -49,22 +48,32 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
     item = RARRAY(tuple)->ptr[i];
     header[0] = header[1] = header[2] = header[3] = 0;
     if (FIXNUM_P(item)) {
-      sign = (digit >= 0);
-      header[2] = (sign ? INTP_SORT : INTN_SORT);
-      header[3] = 0;
+      fixnum = FIX2LONG(item);
+      sign = (fixnum >= 0);
+      if (!sign) fixnum = -fixnum;
+      len = fixnum > UINT_MAX ? 2 : 1;
+      header[2] = sign ? INTP_SORT : INTN_SORT;
+      header[3] = sign ? len : UCHAR_MAX - len;
       rb_str_cat(data, (char*)&header, sizeof(header));
 
-      digit = htonl(FIX2INT(item) + (sign ? 0 : MAX_INT));
-      rb_str_cat(data, (char*)&digit,  sizeof(digit));
+      if (len == 2) {
+        digit = ((u_int32_t *)(&fixnum))[_QUAD_HIGHWORD];
+        digit = htonl(sign ? digit : UINT_MAX - digit);
+        rb_str_cat(data, (char*)&digit, sizeof(digit));
+      }
+      digit = ((u_int32_t *)(&fixnum))[_QUAD_LOWWORD];
+      digit = htonl(sign ? digit : UINT_MAX - digit);
+      rb_str_cat(data, (char*)&digit, sizeof(digit));
     } else if (TYPE(item) == T_BIGNUM) {
       sign = RBIGNUM(item)->sign;
+      len  = RBIGNUM(item)->len;
       header[2] = sign ? INTP_SORT : INTN_SORT;
-      header[3] = RBIGNUM(item)->len;
+      header[3] = sign ? len : UCHAR_MAX - len;
       rb_str_cat(data, (char*)&header, sizeof(header));
 
       digits = BDIGITS(item);
-      for (j = header[3]-1; j >= 0; j--) {
-        digit = htonl(sign ? digits[j] : (MAX_INT - digits[j]));
+      for (j = len-1; j >= 0; j--) {
+        digit = htonl(sign ? digits[j] : (UINT_MAX - digits[j]));
         rb_str_cat(data, (char*)&digit, sizeof(digit));
       }
     } else if (SYMBOL_P(item) || TYPE(item) == T_STRING) {
@@ -113,6 +122,17 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
   return data;
 }
 
+static VALUE empty_bignum(int sign, int len) {
+  /* Create an empty bignum with the right number of digits. */
+  NEWOBJ(num, struct RBignum);
+  OBJSETUP(num, rb_cBignum, T_BIGNUM);
+  num->sign = sign ? 1 : 0;
+  num->len = len;
+  num->digits = ALLOC_N(BDIGIT, len);
+
+  return (VALUE)num;
+}
+
 static VALUE tuple_parse(void **data, int data_len) {
   VALUE tuple = rb_ary_new();
   VALUE item;
@@ -133,27 +153,17 @@ static VALUE tuple_parse(void **data, int data_len) {
     case NIL_SORT:   rb_ary_push(tuple, Qnil);   break;
     case INTP_SORT:
     case INTN_SORT:
-      sign = (header[2] == INTP_SORT);
-      if (header[3] == 0) {
-        digit = ntohl(*(u_int32_t*)ptr) - (sign ? 0 : MAX_INT);
-        ptr += 4;
-        rb_ary_push(tuple, INT2NUM(digit));
-      } else {
-        // Create an empty bignum with the right number of digits.
-        NEWOBJ(item, struct RBignum);
-        OBJSETUP(item, rb_cBignum, T_BIGNUM);        
-        item->sign = sign ? 1 : 0;
-        item->len = header[3];
-        item->digits = ALLOC_N(BDIGIT, header[3]);
+      sign  = (header[2] == INTP_SORT);
+      len   = sign ? header[3] : (UCHAR_MAX - header[3]);
 
-        digits = BDIGITS(item);
-        for (i = header[3]-1; i >= 0; i--) {
-          digit = ntohl(*(u_int32_t*)ptr);
-          digits[i] = sign ? digit : MAX_INT - digit;
-          ptr += 4;
-        }
-        rb_ary_push(tuple, (VALUE)item);
+      item = empty_bignum(sign, len);
+      digits = BDIGITS(item);
+      for (i = len-1; i >= 0; i--) {
+        digit = ntohl(*(u_int32_t*)ptr);
+        digits[i] = sign ? digit : UINT_MAX - digit;
+        ptr += 4;
       }
+      rb_ary_push(tuple, item);
       break;
     case STR_SORT:
     case SYM_SORT:
