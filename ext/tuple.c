@@ -223,10 +223,6 @@ static VALUE tuple_load(VALUE self, VALUE data) {
   return tuple_parse(&ptr, RSTRING_LEN(data));
 }
 
-static VALUE array_compare(VALUE self, VALUE other) {
-  return rb_funcall(tuple_dump(mTuple, self), rb_intern("<=>"), 1, tuple_dump(mTuple, other));
-}
-
 VALUE mTuple;
 void Init_tuple() {
   rb_require("time");
@@ -236,5 +232,4 @@ void Init_tuple() {
   mTuple = rb_define_module("Tuple");
   rb_define_module_function(mTuple, "dump", tuple_dump, 1);
   rb_define_module_function(mTuple, "load", tuple_load, 1);
-  rb_define_method(rb_cArray, "<=>", array_compare, 1);
 }
