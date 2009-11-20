@@ -24,6 +24,14 @@ class TupleTest < Test::Unit::TestCase
     assert_equal [1], Tuple.load(Tuple.dump(1))
   end
 
+  should "dump times consistently" do
+    t = '2009-10-15 1:23:45 PM'
+    tuple = Tuple.dump(Time.parse(t))
+    100000.times do
+      assert_equal tuple, Tuple.dump(Time.parse(t))
+    end
+  end
+
   should "sort tuples using binary" do
     now   = Time.now.getgm
     today = Date.parse(now.to_s)
