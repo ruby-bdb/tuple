@@ -59,8 +59,15 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
 
   if (TYPE(tuple) != T_ARRAY) tuple = rb_ary_new4(1, &tuple);
 
-  for (i = 0; i < RARRAY(tuple)->len; i++) {
-    item = RARRAY(tuple)->ptr[i];
+#if defined(RUBY_1_9_x)
+  for (i = 0; i < RARRAY_LEN(tuple); i++) {
+      item = RARRAY_PTR(tuple)[i];
+#elif defined(RUBY_1_8_x)
+    for (i = 0; i < RARRAY(tuple)->len; i++) {
+        item = RARRAY(tuple)->ptr[i];
+#else
+#error unsupported RUBY_VERSION
+#endif
     header[0] = header[1] = header[2] = header[3] = 0;
     if (FIXNUM_P(item)) {
       fixnum = FIX2LONG(item);
@@ -80,13 +87,26 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
       digit = htonl(sign ? digit : UINT_MAX - digit);
       rb_str_cat(data, (char*)&digit, sizeof(digit));
     } else if (TYPE(item) == T_BIGNUM) {
+#if defined(RUBY_1_9_x)
+      sign = RBIGNUM_SIGN(item);
+      len  = RBIGNUM_LEN(item);
+#elif defined(RUBY_1_8_x)
       sign = RBIGNUM(item)->sign;
       len  = RBIGNUM(item)->len;
+#else
+#error unsupported RUBY_VERSION
+#endif
       header[2] = sign ? INTP_SORT : INTN_SORT;
       header[3] = sign ? len : UCHAR_MAX - len;
       rb_str_cat(data, (char*)&header, sizeof(header));
 
+#if defined(RUBY_1_9_x)
+      digits = RBIGNUM_DIGITS(item);
+#elif defined(RUBY_1_8_x)
       digits = BDIGITS(item);
+#else
+#error unsupported RUBY_VERSION
+#endif
       for (j = len-1; j >= 0; j--) {
         digit = htonl(sign ? digits[j] : (UINT_MAX - digits[j]));
         rb_str_cat(data, (char*)&digit, sizeof(digit));
@@ -138,15 +158,43 @@ static VALUE tuple_dump(VALUE self, VALUE tuple) {
 }
 
 static VALUE empty_bignum(int sign, int len) {
+#if defined(RUBY_1_9_x)
+  return rb_big_new(len, sign);
+#elif defined(RUBY_1_8_x)
   /* Create an empty bignum with the right number of digits. */
   NEWOBJ(num, struct RBignum);
   OBJSETUP(num, rb_cBignum, T_BIGNUM);
+
   num->sign = sign ? 1 : 0;
   num->len = len;
   num->digits = ALLOC_N(BDIGIT, len);
 
   return (VALUE)num;
+#else
+#error unsupported RUBY_VERSION
+#endif
 }
+// static VALUE empty_bignum(int sign, int len) {
+//   /* Create an empty bignum with the right number of digits. */
+//   NEWOBJ(num, struct RBignum);
+//   OBJSETUP(num, rb_cBignum, T_BIGNUM);
+// #if defined(RUBY_1_9_x)
+//   RBIGNUM_SET_SIGN(num, sign ? 1 : 0);
+//   // RBIGNUM_LEN(num) = len;
+//   // RBIGNUM_DIGITS(num) = ALLOC_N(BDIGIT, len);
+//   RBIGNUM(num)->len = len;
+//   num->digits = ALLOC_N(BDIGIT, len);
+// #elif defined(RUBY_1_8_x)
+//   num->sign = sign ? 1 : 0;
+//   num->len = len;
+//   num->digits = ALLOC_N(BDIGIT, len);
+// #else
+// #error unsupported RUBY_VERSION
+// #endif
+// 
+//   return (VALUE)num;
+// }
+
 
 static VALUE tuple_parse(void **data, int data_len) {
   VALUE tuple = rb_ary_new();
@@ -172,7 +220,13 @@ static VALUE tuple_parse(void **data, int data_len) {
       len   = sign ? header[3] : (UCHAR_MAX - header[3]);
 
       item = empty_bignum(sign, len);
+#if defined(RUBY_1_9_x)
+      digits = RBIGNUM_DIGITS(item);
+#elif defined(RUBY_1_8_x)
       digits = BDIGITS(item);
+#else
+#error unsupported RUBY_VERSION
+#endif
       for (i = len-1; i >= 0; i--) {
         digit = ntohl(*(u_int32_t*)ptr);
         digits[i] = sign ? digit : UINT_MAX - digit;
