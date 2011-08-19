@@ -174,27 +174,6 @@ static VALUE empty_bignum(int sign, int len) {
 #error unsupported RUBY_VERSION
 #endif
 }
-// static VALUE empty_bignum(int sign, int len) {
-//   /* Create an empty bignum with the right number of digits. */
-//   NEWOBJ(num, struct RBignum);
-//   OBJSETUP(num, rb_cBignum, T_BIGNUM);
-// #if defined(RUBY_1_9_x)
-//   RBIGNUM_SET_SIGN(num, sign ? 1 : 0);
-//   // RBIGNUM_LEN(num) = len;
-//   // RBIGNUM_DIGITS(num) = ALLOC_N(BDIGIT, len);
-//   RBIGNUM(num)->len = len;
-//   num->digits = ALLOC_N(BDIGIT, len);
-// #elif defined(RUBY_1_8_x)
-//   num->sign = sign ? 1 : 0;
-//   num->len = len;
-//   num->digits = ALLOC_N(BDIGIT, len);
-// #else
-// #error unsupported RUBY_VERSION
-// #endif
-// 
-//   return (VALUE)num;
-// }
-
 
 static VALUE tuple_parse(void **data, int data_len) {
   VALUE tuple = rb_ary_new();
