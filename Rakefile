@@ -10,7 +10,7 @@ begin
     s.email = "code@justinbalthrop.com"
     s.homepage = "http://github.com/ninjudd/tuple"
     s.description = "Fast, binary-sortable serialization for arrays of simple Ruby types."
-    s.authors = ["Justin Balthrop"]
+    s.authors = ["Justin Balthrop", "Ash Moran"]
     s.files = ["README.rdoc", "VERSION.yml", "ext/tuple.c", "ext/extconf.rb", "test/test_helper.rb", "test/tuple_test.rb"]
     s.extensions = ["ext/extconf.rb"]
     s.require_paths = ["ext"]
