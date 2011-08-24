@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{Justin Balthrop}, %q{Ash Moran}]
-  s.date = %q{2011-08-22}
+  s.date = %q{2011-08-24}
   s.description = %q{Fast, binary-sortable serialization for arrays of simple Ruby types.}
   s.email = %q{code@justinbalthrop.com}
   s.extensions = [%q{ext/extconf.rb}]
@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
   ]
   s.homepage = %q{http://github.com/ninjudd/tuple}
   s.require_paths = [%q{ext}]
-  s.rubygems_version = %q{1.8.6}
+  s.rubygems_version = %q{1.8.7}
   s.summary = %q{Tuple serialization functions.}
 
   if s.respond_to? :specification_version then
