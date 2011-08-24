@@ -29,4 +29,4 @@ supported (listed in ascending sort order):
 
 == License:
 
-Copyright (c) 2009 Justin Balthrop, Geni.com; Published under The MIT License, see LICENSE
+Copyright (c) 2009 Justin Balthrop; Published under The MIT License, see LICENSE
