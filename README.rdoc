@@ -25,7 +25,7 @@ supported (listed in ascending sort order):
 
 == Install:
 
-  sudo gem install ninjudd-tuple -s http://gems.github.com
+  gem install tuple
 
 == License:
 
