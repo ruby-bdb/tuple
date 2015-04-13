@@ -1,4 +1,4 @@
-require_relative "helper"
+require File.join(File.dirname(__FILE__), 'helper')
 
 class TestTuple
   def test_time
