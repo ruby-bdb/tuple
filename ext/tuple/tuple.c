@@ -1,5 +1,13 @@
 #include "ruby.h"
-#include <netinet/in.h>
+
+#ifdef _WIN32
+  #include <stdint.h>
+
+  typedef uint8_t u_int8_t;
+  typedef uint32_t u_int32_t;
+#else
+  #include <netinet/in.h>
+#endif
 
 VALUE mTuple;
 VALUE rb_cDate;
@@ -15,7 +23,7 @@ VALUE rb_cDate;
 #define FALSE_SORT   1 // FalseClass
 #define NIL_SORT     0 // NilClass
 
-#define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
+// #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
 
 static void null_pad(VALUE data, int len) {
   static u_int8_t null = 0;
