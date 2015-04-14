@@ -25,3 +25,15 @@ end
 
 desc "Compile and then run tests"
 task :default => [:compile, :test]
+
+task :clean do
+  include FileUtils
+
+  rm_rf("tmp")
+
+  Dir["*/**/*"].each do |path|
+    if path =~ /(\.o|\.bundle|\/Makefile)\z/
+      rm_f(path)
+    end
+  end
+end
